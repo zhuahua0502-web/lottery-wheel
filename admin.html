@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>抽奖后台</title>
+<style>
+body { font-family: Arial; padding: 20px; }
+input { width: 80px; }
+button { padding: 6px 12px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h2>🎛 抽奖后台管理</h2>
+
+<h3>抽奖次数</h3>
+<input id="chances" type="number" min="0" />
+
+<h3>奖项概率</h3>
+<table id="table"></table>
+
+<button onclick="save()">💾 保存配置</button>
+
+<script>
+async function load() {
+  const res = await fetch("/api/config");
+  const data = await res.json();
+
+  document.getElementById("chances").value = data.chances;
+
+  const table = document.getElementById("table");
+  table.innerHTML = "";
+  data.prizes.forEach((p, i) => {
+    table.innerHTML += `
+      <tr>
+        <td>${p.name}</td>
+        <td><input type="number" value="${p.weight}" data-i="${i}"></td>
+      </tr>
+    `;
+  });
+}
+
+async function save() {
+  const inputs = document.querySelectorAll("input[data-i]");
+  const prizes = [...inputs].map(i => ({
+    name: i.parentNode.previousSibling.innerText,
+    weight: Number(i.value)
+  }));
+
+  await fetch("/api/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chances: document.getElementById("chances").value,
+      prizes
+    })
+  });
+
+  alert("配置已保存");
+}
+
+load();
+</script>
+
+</body>
+</html>

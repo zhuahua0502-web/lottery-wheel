@@ -1,26 +1,17 @@
-// 奖项 + 概率配置（百分比）
-const prizes = [
-  { name: "抖音1号一个", weight: 5 },
-  { name: "大包零食碎片", weight: 45 },
-  { name: "墨镜碎片", weight: 30 },
-  { name: "再破一次", weight: 20 }
-];
+import { config } from "./_config.js";
 
-// 按权重随机
 function drawPrize(list) {
-  const total = list.reduce((sum, p) => sum + p.weight, 0);
-  let rand = Math.random() * total;
+  const total = list.reduce((s, p) => s + p.weight, 0);
+  let r = Math.random() * total;
 
-  for (const prize of list) {
-    if (rand < prize.weight) {
-      return prize;
-    }
-    rand -= prize.weight;
+  for (const p of list) {
+    if (r < p.weight) return p;
+    r -= p.weight;
   }
 }
 
 export default function handler(req, res) {
-  const prize = drawPrize(prizes);
+  const prize = drawPrize(config.prizes);
 
   res.status(200).json({
     code: 200,
