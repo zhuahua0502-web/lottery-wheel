@@ -1,7 +1,8 @@
-import { config } from "./_config.js";
+import { getConfig, saveConfig } from "./kv.js";
 
-export default function handler(req, res) {
-  // 没次数
+export default async function handler(req, res) {
+  const config = await getConfig();
+
   if (config.chances <= 0) {
     return res.json({
       code: 400,
@@ -12,7 +13,7 @@ export default function handler(req, res) {
   // 扣次数
   config.chances--;
 
-  // 按后台概率抽奖
+  // 按概率抽奖
   const total = config.prizes.reduce((s, p) => s + p.weight, 0);
   let r = Math.random() * total;
 
@@ -23,6 +24,8 @@ export default function handler(req, res) {
       break;
     }
   }
+
+  await saveConfig(config);
 
   res.json({
     code: 200,
