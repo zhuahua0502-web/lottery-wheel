@@ -1,6 +1,8 @@
+import { config } from "./_config.js";
+
 export default function handler(req, res) {
-  res.status(200).json({
-    chances: 1,
+  res.json({
+    chances: config.chances,
     history: []
   });
 }

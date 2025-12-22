@@ -2,49 +2,112 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>抽奖后台</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>抽奖后台管理</title>
+
 <style>
-body { font-family: Arial; padding: 20px; }
-input { width: 80px; }
-button { padding: 6px 12px; margin-top: 10px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", Arial;
+  background: #f6f7fb;
+  padding: 20px;
+}
+h2 {
+  margin-bottom: 10px;
+}
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.08);
+  max-width: 520px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+td {
+  padding: 8px 4px;
+}
+input[type="number"] {
+  width: 90px;
+  padding: 6px;
+  font-size: 14px;
+}
+button {
+  margin-top: 14px;
+  width: 100%;
+  height: 42px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(135deg,#ff512f,#dd2476);
+  border: none;
+  border-radius: 21px;
+  cursor: pointer;
+}
+button:active {
+  transform: scale(.96);
+}
+.tip {
+  font-size: 12px;
+  color: #888;
+  margin-top: 8px;
+}
 </style>
 </head>
+
 <body>
 
 <h2>🎛 抽奖后台管理</h2>
 
-<h3>抽奖次数</h3>
-<input id="chances" type="number" min="0" />
+<div class="card">
+  <h3>🎫 每人可抽次数</h3>
+  <input id="chances" type="number" min="0">
 
-<h3>奖项概率</h3>
-<table id="table"></table>
+  <h3 style="margin-top:18px;">🎁 奖项概率配置</h3>
+  <table id="table"></table>
 
-<button onclick="save()">💾 保存配置</button>
+  <button onclick="save()">💾 保存配置</button>
+  <div class="tip">修改后立即生效（Vercel 重启会重置）</div>
+</div>
 
 <script>
+let cachedConfig = null;
+
+// 加载配置
 async function load() {
   const res = await fetch("/api/config");
   const data = await res.json();
+  cachedConfig = data;
 
   document.getElementById("chances").value = data.chances;
 
   const table = document.getElementById("table");
   table.innerHTML = "";
+
   data.prizes.forEach((p, i) => {
     table.innerHTML += `
       <tr>
         <td>${p.name}</td>
-        <td><input type="number" value="${p.weight}" data-i="${i}"></td>
+        <td style="text-align:right">
+          <input 
+            type="number" 
+            min="0"
+            value="${p.weight}" 
+            data-index="${i}"
+          >
+        </td>
       </tr>
     `;
   });
 }
 
+// 保存配置（name 永远来自后端）
 async function save() {
-  const inputs = document.querySelectorAll("input[data-i]");
-  const prizes = [...inputs].map(i => ({
-    name: i.parentNode.previousSibling.innerText,
-    weight: Number(i.value)
+  const inputs = document.querySelectorAll("input[data-index]");
+  const prizes = cachedConfig.prizes.map((p, i) => ({
+    name: p.name,
+    weight: Number(inputs[i].value)
   }));
 
   await fetch("/api/config", {
@@ -56,7 +119,8 @@ async function save() {
     })
   });
 
-  alert("配置已保存");
+  alert("✅ 配置已保存并生效");
+  load(); // 重新加载确认
 }
 
 load();
