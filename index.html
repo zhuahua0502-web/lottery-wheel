@@ -1,226 +1,254 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>幸运抽奖</title>
-
 <style>
-*{box-sizing:border-box}
-body{
-  margin:0;
-  min-height:100vh;
-  background:radial-gradient(circle at top,#ffe7d6,#ff9a8b);
-  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Arial;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+body {
+  margin: 0;
+  background: linear-gradient(180deg,#ffecd2,#fcb69f);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", Arial;
 }
-.container{
-  width:100%;
-  max-width:420px;
-  background:#fff;
-  border-radius:22px;
-  padding:20px 16px 28px;
-  box-shadow:0 20px 40px rgba(0,0,0,.25);
-  text-align:center;
+.container {
+  max-width: 420px;
+  margin: auto;
+  padding: 16px;
+  text-align: center;
 }
-h2{
-  margin:4px 0 8px;
-  font-size:24px;
+#wheelBox { width: 100%; max-width: 320px; margin: 16px auto; }
+canvas { display: block; width: 100%; height: auto; }
+.spin-btn {
+  width: 80%; height: 50px; font-size: 20px; font-weight: bold; color: #fff;
+  background: linear-gradient(135deg,#ff512f,#dd2476); border: none; border-radius: 25px;
+  box-shadow: 0 6px 12px rgba(0,0,0,.25);
 }
-.status{
-  font-size:15px;
-  color:#666;
+.spin-btn:active { transform: scale(.96); }
+ul { list-style: none; padding: 0; font-size: 14px; }
+li { padding: 3px 0; }
+
+#resultPopup {
+  position: fixed;
+  top: 25%; left: 50%;
+  transform: translateX(-50%) scale(0);
+  background: rgba(255,255,255,0.95);
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #ff3b3b;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+  text-align: center;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0; z-index: 9999;
 }
-#wheelBox{
-  position:relative;
-  width:100%;
-  margin:18px auto 10px;
-}
-canvas{
-  width:100%;
-  height:auto;
-}
-.pointer{
-  position:absolute;
-  top:-6px;
-  left:50%;
-  transform:translateX(-50%);
-  width:0;height:0;
-  border-left:16px solid transparent;
-  border-right:16px solid transparent;
-  border-bottom:28px solid #ff3b3b;
-  filter:drop-shadow(0 4px 4px rgba(0,0,0,.3));
-}
-.spin-btn{
-  margin-top:14px;
-  width:80%;
-  height:52px;
-  border:none;
-  border-radius:26px;
-  font-size:20px;
-  font-weight:bold;
-  color:#fff;
-  background:linear-gradient(135deg,#ff512f,#dd2476);
-  box-shadow:0 8px 18px rgba(0,0,0,.25);
-}
-.spin-btn:active{transform:scale(.96)}
-ul{
-  margin-top:12px;
-  padding:0;
-  list-style:none;
-  font-size:14px;
-  color:#444;
-}
-li{padding:3px 0}
+#resultPopup img { width: 60px; height: 60px; display: block; margin: 0 auto 8px; }
 </style>
 </head>
-
 <body>
 
 <div class="container">
-  <h2>🎁 幸运抽奖</h2>
-  <div class="status">🎫 剩余抽奖次数：<b id="chance">0</b></div>
-
+  <h2>🎁 丸宝专属破蛋抽奖</h2>
+  <p>🎫 剩余抽奖次数：<b id="chance">0</b></p>
   <div id="wheelBox">
-    <div class="pointer"></div>
     <canvas id="wheel" width="400" height="400"></canvas>
   </div>
-
   <button class="spin-btn" onclick="spin()">🎯 开始抽奖</button>
-
+  <h3>📜 抽奖记录</h3>
   <ul id="history"></ul>
 </div>
 
+<div id="resultPopup">
+  <img id="resultImg" src="" alt="">
+  <div>🎉 <span id="resultText"></span></div>
+</div>
+
 <script>
-/* ===== 奖项配置 ===== */
-const prizes = [
-  { name:"抖音1号一个", img:"images/prize1.png" },
-  { name:"大包零食碎片", img:"images/prize2.png" },
-  { name:"墨镜碎片", img:"images/prize3.png" },
-  { name:"再来一次", img:"images/prize4.png" }
-];
+const prizeNames = ["抖音1号一个","大包零食碎片","墨镜碎片","再破一次"];
+const prizeImages = {
+  "抖音1号一个":"images/prize1.png",
+  "大包零食碎片":"images/prize2.png",
+  "墨镜碎片":"images/prize3.png",
+  "再破一次":"images/prize4.png"
+};
+const loadedImages = {};
+const placeholder = "https://via.placeholder.com/60";
 
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
-const size = canvas.width;
-const center = size/2;
-const slice = 2*Math.PI/prizes.length;
-
+const center = canvas.width/2;
 let currentAngle = 0;
 let spinning = false;
 
-/* ===== 图片预加载 ===== */
-const images = {};
-let loaded = 0;
-prizes.forEach(p=>{
-  const img = new Image();
-  img.src = p.img;
-  img.onload = ()=>{ if(++loaded===prizes.length) draw(); }
-  images[p.name]=img;
-});
+// 图片/文字参数
+const prizePosition = {
+  "抖音1号一个":    { imgRadius: 60, textRadius: 120 },
+  "大包零食碎片":  { imgRadius: 60, textRadius: 120 },
+  "墨镜碎片":      { imgRadius: 60, textRadius: 120 },
+  "再破一次":      { imgRadius: 60, textRadius: 120 }
+};
 
-/* ===== 绘制转盘 ===== */
+// 绘制转盘
 function drawWheel(){
-  prizes.forEach((p,i)=>{
+  const slice = 2*Math.PI/prizeNames.length;
+  for(let i=0;i<prizeNames.length;i++){
     const start = i*slice;
-    const end = start+slice;
+    const name = prizeNames[i];
+    const pos = prizePosition[name] || { imgRadius:60, textRadius:120 };
 
+    // 扇区
     ctx.beginPath();
     ctx.moveTo(center,center);
-    ctx.arc(center,center,center-6,start,end);
+    ctx.arc(center,center,center-4,start,start+slice);
     ctx.fillStyle = i%2 ? "#ffe082" : "#ffab91";
     ctx.fill();
     ctx.strokeStyle="#fff";
     ctx.stroke();
 
-    const angle = start+slice/2;
+    // 图片坐标
+    const imgAngle = start + slice/2;
+    const imgX = center + pos.imgRadius * Math.cos(imgAngle) - 30;
+    const imgY = center + pos.imgRadius * Math.sin(imgAngle) - 30;
 
-    // 图片（靠近圆心）
-    const rImg = 85;
-    const img = images[p.name];
-    if(img){
-      ctx.drawImage(
-        img,
-        center + rImg*Math.cos(angle) - 28,
-        center + rImg*Math.sin(angle) - 28,
-        56,56
-      );
-    }
+    // 文字坐标
+    const textX = center + pos.textRadius * Math.cos(imgAngle);
+    const textY = center + pos.textRadius * Math.sin(imgAngle);
 
-    // 文字（外圈）
-    const rText = 135;
+    const imgSrc = loadedImages[name]?.src || placeholder;
+    const img = new Image();
+    img.src = imgSrc;
+    ctx.drawImage(img,imgX,imgY,60,60);
+
     ctx.fillStyle="#333";
-    ctx.font="bold 18px Arial";
+    ctx.font="bold 20px Arial";
     ctx.textAlign="center";
     ctx.textBaseline="middle";
-    ctx.fillText(
-      p.name,
-      center + rText*Math.cos(angle),
-      center + rText*Math.sin(angle)
-    );
-  });
+    ctx.fillText(name,textX,textY);
+  }
 }
 
-/* ===== 每帧绘制 ===== */
+// 绘制指针和转盘
 function draw(){
-  ctx.clearRect(0,0,size,size);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.save();
   ctx.translate(center,center);
   ctx.rotate(currentAngle);
   ctx.translate(-center,-center);
   drawWheel();
   ctx.restore();
+
+  // 指针
+  ctx.fillStyle="#ff3b3b";
+  ctx.beginPath();
+  ctx.moveTo(center-16,0);
+  ctx.lineTo(center+16,0);
+  ctx.lineTo(center,40);
+  ctx.closePath();
+  ctx.fill();
 }
 
-/* ===== 抽奖 ===== */
+// 弹窗显示中奖结果
+function showResultPopup(prizeName){
+  const popup = document.getElementById("resultPopup");
+  const resultText = document.getElementById("resultText");
+  const resultImg = document.getElementById("resultImg");
+
+  resultText.innerText = prizeName;
+  const imgSrc = loadedImages[prizeName]?.src || placeholder;
+  resultImg.src = imgSrc;
+  resultImg.style.display = "block";
+
+  popup.style.transform = "translateX(-50%) scale(1)";
+  popup.style.opacity = "1";
+
+  setTimeout(()=>{
+    popup.style.transform = "translateX(-50%) scale(0)";
+    popup.style.opacity = "0";
+  },2000);
+}
+
+// 抽奖
 async function spin(){
   if(spinning) return;
-  spinning = true;
+  spinning=true;
 
-  const res = await fetch("/api/lottery",{method:"POST"});
-  const data = await res.json();
+  try{
+    const res = await fetch("/api/lottery",{method:"POST"});
+    const data = await res.json();
+    if(data.code!==200){
+      alert(data.msg);
+      spinning=false;
+      return;
+    }
 
-  const index = prizes.findIndex(p=>p.name===data.prize.name);
-  rotateTo(index);
+    let prizeName = data.prize.name?.trim()||"";
+    let index = prizeNames.findIndex(p=>p.replace(/\s/g,"")===prizeName.replace(/\s/g,""));
+    if(index===-1) index=0;
+
+    rotateTo(index);
+
+  }catch(e){
+    alert("网络异常，请稍后重试");
+    spinning=false;
+  }
 }
 
-/* ===== 精准对齐指针 ===== */
+// 转盘旋转动画（修正指针方向）
 function rotateTo(index){
-  const targetAngle =
-    Math.PI*8 + (Math.PI*1.5) - (index*slice + slice/2);
+  const slice = 2*Math.PI/prizeNames.length;
+  const spins = 8; 
+  const pointerOffset = Math.PI/2; // 指针在顶部
+  const targetAngle = spins*2*Math.PI - (index*slice + slice/2) - pointerOffset;
 
-  const start = currentAngle;
-  const duration = 3600;
-  let startTime=null;
+  const startAngle = currentAngle;
+  const duration = 4500;
+  let startTime = null;
 
   function anim(t){
-    if(!startTime) startTime=t;
-    const p=Math.min((t-startTime)/duration,1);
-    const ease=1-Math.pow(1-p,3);
-    currentAngle=start+(targetAngle-start)*ease;
+    if(!startTime) startTime = t;
+    const progress = Math.min((t-startTime)/duration,1);
+    const ease = 1-Math.pow(1-progress,3);
+    currentAngle = startAngle + (targetAngle - startAngle) * ease;
     draw();
-    if(p<1) requestAnimationFrame(anim);
-    else{
-      spinning=false;
+
+    if(progress < 1) requestAnimationFrame(anim);
+    else {
+      spinning = false;
       loadStatus();
-      alert("🎉 抽中："+prizes[index].name);
+      showResultPopup(prizeNames[index]);
     }
   }
   requestAnimationFrame(anim);
 }
 
-/* ===== 状态 ===== */
+// 加载剩余次数和抽奖历史
 async function loadStatus(){
-  const res=await fetch("/api/status");
-  const data=await res.json();
-  chance.innerText=data.chances;
-  history.innerHTML=data.history.map(h=>`<li>${h.time} - ${h.prize}</li>`).join("");
+  try{
+    const res = await fetch("/api/status");
+    const data = await res.json();
+    document.getElementById("chance").innerText = data.chances;
+    document.getElementById("history").innerHTML=
+      data.history.map(h=>`<li>${h.time} - ${h.prize}</li>`).join("");
+  }catch(e){
+    console.warn("状态加载失败");
+  }
 }
 
-draw();
-loadStatus();
+// 初始化
+function init(){
+  draw();
+  loadStatus();
+}
+
+// 图片预加载
+for(let name in prizeImages){
+  const img = new Image();
+  img.src = prizeImages[name];
+  img.onload=()=>{ loadedImages[name]=img; draw(); }
+  img.onerror=()=>{ console.warn(`图片加载失败: ${prizeImages[name]}`);}
+}
+
+init();
 </script>
 
 </body>
