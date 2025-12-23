@@ -58,6 +58,18 @@ button:active {
 
 <body>
 
+<script>
+  const ADMIN_PASSWORD = "123456"; // ← 改成你自己的
+
+  const input = prompt("请输入后台管理密码");
+  if (input !== ADMIN_PASSWORD) {
+    alert("密码错误");
+    document.body.innerHTML = "";
+    throw new Error("Unauthorized");
+  }
+</script>
+
+
 <h2>🎛 抽奖后台管理</h2>
 
 <div class="card">
