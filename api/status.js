@@ -1,11 +1,9 @@
-import { kv } from "@vercel/kv";
+import { getConfig } from "./kv.js";
 
 export default async function handler(req, res) {
-  const status = (await kv.get("lottery:status")) || { chances: 0 };
-  const history = (await kv.get("lottery:history")) || [];
-
+  const config = await getConfig();
   res.json({
-    chances: status.chances,
-    history,
+    chances: config.chances,
+    history: []
   });
 }
