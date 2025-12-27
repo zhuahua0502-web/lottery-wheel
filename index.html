@@ -197,35 +197,44 @@ async function spin(){
 function rotateTo(index){
   const slice = 2 * Math.PI / prizeNames.length;
 
-  // ✅ 每次都额外多转的圈数（可调，推荐 6~10）
-  const extraSpins = 6 + Math.floor(Math.random() * 3); // 6~8圈
-
-  // 指针在正上方
+  // 指针在正上方，所以要减去 90°
   const pointerOffset = Math.PI / 2;
 
-  // ✅ 关键：目标角度 = 当前角度 + 多圈 + 对齐修正
-  const targetAngle =
-    currentAngle
-    + extraSpins * 2 * Math.PI
-    + (2 * Math.PI - (index * slice + slice / 2))
-    - pointerOffset;
+  // 当前角度先归一化，避免无限变大
+  const normalizedCurrent = currentAngle % (2 * Math.PI);
+
+  // 目标扇区“应该停下”的绝对角度
+  const targetAbsolute =
+    -(index * slice + slice / 2) - pointerOffset;
+
+  // 计算从当前角度转到目标角度还差多少
+  let delta = targetAbsolute - normalizedCurrent;
+
+  // 保证是“正向旋转”
+  if (delta < 0) delta += 2 * Math.PI;
+
+  // 每次固定多转圈数（你想要的“抽奖感”）
+  const extraSpins = 6; // 这里可以改 5、6、8
+  const finalDelta = extraSpins * 2 * Math.PI + delta;
 
   const startAngle = currentAngle;
+  const targetAngle = startAngle + finalDelta;
+
   const duration = 4500;
   let startTime = null;
 
   function anim(t){
     if(!startTime) startTime = t;
-    const progress = Math.min((t - startTime) / duration, 1);
-    const ease = 1 - Math.pow(1 - progress, 3);
+    const p = Math.min((t - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
 
     currentAngle = startAngle + (targetAngle - startAngle) * ease;
     draw();
 
-    if(progress < 1){
+    if(p < 1){
       requestAnimationFrame(anim);
     } else {
-      currentAngle = targetAngle; // 防止累计误差
+      currentAngle = targetAngle; // 精确落位
       spinning = false;
       loadStatus();
       showResultPopup(prizeNames[index]);
