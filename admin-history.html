@@ -1,194 +1,196 @@
-!DOCTYPE html
-html lang=zh-CN
-head
-meta charset=UTF-8 
-meta name=viewport content=width=device-width, initial-scale=1 
-title抽奖记录统计title
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>抽奖记录统计</title>
 
-style
-body {
-  margin 0;
-  font-family -apple-system, BlinkMacSystemFont, PingFang SC, Arial;
-  background #f6f7fb;
-  color #333;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", Arial;
+      background: #f6f7fb;
+      color: #333;
+    }
 
-.container {
-  max-width 960px;
-  margin 0 auto;
-  padding 20px;
-}
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-h1 {
-  margin-bottom 10px;
-}
+    h1 {
+      margin-bottom: 6px;
+    }
 
-.stats {
-  display grid;
-  grid-template-columns repeat(auto-fit, minmax(220px, 1fr));
-  gap 16px;
-  margin-bottom 24px;
-}
+    p.desc {
+      margin-bottom: 20px;
+      color: #666;
+      font-size: 14px;
+    }
 
-.card {
-  background #fff;
-  border-radius 12px;
-  padding 16px;
-  box-shadow 0 8px 20px rgba(0,0,0,.06);
-}
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
 
-.card h3 {
-  margin 0 0 6px;
-  font-size 14px;
-  color #888;
-}
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.06);
+    }
 
-.card .value {
-  font-size 28px;
-  font-weight bold;
-}
+    .card h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: #888;
+    }
 
-table {
-  width 100%;
-  border-collapse collapse;
-  background #fff;
-  border-radius 12px;
-  overflow hidden;
-  box-shadow 0 8px 20px rgba(0,0,0,.06);
-}
+    .card .value {
+      font-size: 30px;
+      font-weight: bold;
+    }
 
-th, td {
-  padding 12px 10px;
-  border-bottom 1px solid #eee;
-  text-align left;
-  font-size 14px;
-}
+    h2 {
+      margin: 24px 0 10px;
+      font-size: 18px;
+    }
 
-th {
-  background #fafafa;
-  font-weight 600;
-}
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,.06);
+      margin-bottom: 24px;
+    }
 
-trlast-child td {
-  border-bottom none;
-}
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 14px;
+    }
 
-.badge {
-  display inline-block;
-  padding 4px 10px;
-  border-radius 999px;
-  background #eef2ff;
-  color #4f46e5;
-  font-size 12px;
-  font-weight 500;
-}
+    th {
+      background: #fafafa;
+      font-weight: 600;
+    }
 
-.footer {
-  margin-top 24px;
-  font-size 13px;
-  color #999;
-  text-align center;
-}
-style
-head
+    tr:last-child td {
+      border-bottom: none;
+    }
 
-body
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-size: 12px;
+      font-weight: 500;
+    }
 
-div class=container
-  h1📊 抽奖记录统计h1
-  p实时统计抽奖结果与历史记录p
+    .footer {
+      text-align: center;
+      font-size: 13px;
+      color: #999;
+      margin-top: 30px;
+    }
+  </style>
+</head>
 
-  !-- 统计卡片 --
-  div class=stats
-    div class=card
-      h3总抽奖次数h3
-      div class=value id=totalCount0div
-    div
+<body>
+  <div class="container">
+    <h1>📊 抽奖记录统计</h1>
+    <p class="desc">实时统计抽奖结果与历史记录</p>
 
-    div class=card
-      h3不同奖项数量h3
-      div class=value id=prizeCount0div
-    div
-  div
+    <!-- 统计卡片 -->
+    <div class="stats">
+      <div class="card">
+        <h3>总抽奖次数</h3>
+        <div class="value" id="totalCount">0</div>
+      </div>
+      <div class="card">
+        <h3>命中奖项种类</h3>
+        <div class="value" id="prizeCount">0</div>
+      </div>
+    </div>
 
-  !-- 奖项统计 --
-  h2🎁 奖项命中统计h2
-  table id=summaryTable
-    thead
-      tr
-        th奖项名称th
-        th命中次数th
-      tr
-    thead
-    tbodytbody
-  table
+    <!-- 奖项统计 -->
+    <h2>🎯 奖项命中统计</h2>
+    <table id="summaryTable">
+      <thead>
+        <tr>
+          <th>奖项名称</th>
+          <th>命中次数</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-  br 
+    <!-- 抽奖历史 -->
+    <h2>🧾 抽奖历史记录</h2>
+    <table id="historyTable">
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>抽中奖项</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-  !-- 抽奖记录 --
-  h2📜 抽奖历史记录h2
-  table id=historyTable
-    thead
-      tr
-        th时间th
-        th抽中奖项th
-      tr
-    thead
-    tbodytbody
-  table
+    <div class="footer">Lottery Admin · History</div>
+  </div>
 
-  div class=footer
-    Lottery Admin · History
-  div
-div
+  <script>
+    async function loadHistory() {
+      const res = await fetch("/api/status");
+      const data = await res.json();
+      const history = data.history || [];
 
-script
-async function loadHistory() {
-  const res = await fetch(apistatus);
-  const data = await res.json();
+      // 总次数
+      document.getElementById("totalCount").innerText = history.length;
 
-  const history = data.history  [];
+      // 奖项统计
+      const map = {};
+      history.forEach(item => {
+        map[item.prize] = (map[item.prize] || 0) + 1;
+      });
 
-   ===== 总次数 =====
-  document.getElementById(totalCount).innerText = history.length;
+      document.getElementById("prizeCount").innerText = Object.keys(map).length;
 
-   ===== 奖项统计 =====
-  const map = {};
-  history.forEach(item = {
-    map[item.prize] = (map[item.prize]  0) + 1;
-  });
+      // 奖项统计表
+      const summaryBody = document.querySelector("#summaryTable tbody");
+      summaryBody.innerHTML = "";
+      Object.entries(map).forEach(([name, count]) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="badge">${name}</span></td>
+          <td>${count}</td>
+        `;
+        summaryBody.appendChild(tr);
+      });
 
-  document.getElementById(prizeCount).innerText =
-    Object.keys(map).length;
+      // 历史表（倒序）
+      const historyBody = document.querySelector("#historyTable tbody");
+      historyBody.innerHTML = "";
+      history.slice().reverse().forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.time}</td>
+          <td>${item.prize}</td>
+        `;
+        historyBody.appendChild(tr);
+      });
+    }
 
-  const summaryBody = document.querySelector(#summaryTable tbody);
-  summaryBody.innerHTML = ;
-
-  Object.entries(map).forEach(([name, count]) = {
-    const tr = document.createElement(tr);
-    tr.innerHTML = `
-      tdspan class=badge${name}spantd
-      td${count}td
-    `;
-    summaryBody.appendChild(tr);
-  });
-
-   ===== 历史记录 =====
-  const historyBody = document.querySelector(#historyTable tbody);
-  historyBody.innerHTML = ;
-
-  history.slice().reverse().forEach(item = {
-    const tr = document.createElement(tr);
-    tr.innerHTML = `
-      td${item.time}td
-      td${item.prize}td
-    `;
-    historyBody.appendChild(tr);
-  });
-}
-
-loadHistory();
-script
-
-body
-html
+    loadHistory();
+  </script>
+</body>
+</html>
