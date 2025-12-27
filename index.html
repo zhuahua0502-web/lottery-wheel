@@ -195,10 +195,20 @@ async function spin(){
 
 // 转盘旋转动画（修正指针方向）
 function rotateTo(index){
-  const slice = 2*Math.PI/prizeNames.length;
-  const spins = 8; 
-  const pointerOffset = Math.PI/2; // 指针在顶部
-  const targetAngle = spins*2*Math.PI - (index*slice + slice/2) - pointerOffset;
+  const slice = 2 * Math.PI / prizeNames.length;
+
+  // ✅ 每次都额外多转的圈数（可调，推荐 6~10）
+  const extraSpins = 6 + Math.floor(Math.random() * 3); // 6~8圈
+
+  // 指针在正上方
+  const pointerOffset = Math.PI / 2;
+
+  // ✅ 关键：目标角度 = 当前角度 + 多圈 + 对齐修正
+  const targetAngle =
+    currentAngle
+    + extraSpins * 2 * Math.PI
+    + (2 * Math.PI - (index * slice + slice / 2))
+    - pointerOffset;
 
   const startAngle = currentAngle;
   const duration = 4500;
@@ -206,20 +216,25 @@ function rotateTo(index){
 
   function anim(t){
     if(!startTime) startTime = t;
-    const progress = Math.min((t-startTime)/duration,1);
-    const ease = 1-Math.pow(1-progress,3);
+    const progress = Math.min((t - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+
     currentAngle = startAngle + (targetAngle - startAngle) * ease;
     draw();
 
-    if(progress < 1) requestAnimationFrame(anim);
-    else {
+    if(progress < 1){
+      requestAnimationFrame(anim);
+    } else {
+      currentAngle = targetAngle; // 防止累计误差
       spinning = false;
       loadStatus();
       showResultPopup(prizeNames[index]);
     }
   }
+
   requestAnimationFrame(anim);
 }
+
 
 // 加载剩余次数和抽奖历史
 async function loadStatus(){
