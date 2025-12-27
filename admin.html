@@ -2,67 +2,59 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>抽奖后台管理</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>抽奖后台</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", Arial;
-  background: linear-gradient(180deg, #f8f9fa, #eef1f4);
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",Arial;
+  background:#f6f7fb;
 }
-.container {
-  max-width: 420px;
-  margin: auto;
-  padding: 20px;
+.container{
+  max-width:420px;
+  margin:auto;
+  padding:16px;
 }
-h2 {
-  text-align: center;
+h2{text-align:center;}
+.card{
+  background:#fff;
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,.06);
 }
-.card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+label{display:block;margin-top:12px;font-weight:bold;}
+input{
+  width:100%;
+  height:36px;
+  margin-top:6px;
+  padding:0 10px;
+  font-size:16px;
 }
-label {
-  display: block;
-  margin: 10px 0 4px;
-  font-weight: bold;
+button{
+  width:100%;
+  height:44px;
+  margin-top:16px;
+  font-size:16px;
+  font-weight:bold;
+  border:none;
+  border-radius:22px;
+  background:linear-gradient(135deg,#ff512f,#dd2476);
+  color:#fff;
 }
-input {
-  width: 100%;
-  height: 40px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 16px;
+button:active{transform:scale(.96);}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
 }
-button {
-  width: 100%;
-  height: 44px;
-  margin-top: 12px;
-  border-radius: 22px;
-  border: none;
-  font-size: 16px;
-  font-weight: bold;
-  color: #fff;
-  background: linear-gradient(135deg,#ff512f,#dd2476);
+th,td{
+  border-bottom:1px solid #eee;
+  padding:8px 4px;
+  text-align:left;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-th, td {
-  border-bottom: 1px solid #eee;
-  padding: 6px;
-  text-align: center;
-}
-.hidden {
-  display: none;
-}
+.hidden{display:none;}
 </style>
 </head>
 
@@ -71,20 +63,20 @@ th, td {
 <div class="container">
 
   <!-- 登录 -->
-  <div id="loginBox" class="card">
+  <div id="login" class="card">
     <h2>🔐 后台登录</h2>
-    <input id="password" type="password" placeholder="请输入后台密码">
+    <input id="password" type="password" placeholder="请输入后台密码" />
     <button onclick="login()">进入后台</button>
   </div>
 
   <!-- 后台 -->
-  <div id="adminBox" class="hidden">
+  <div id="panel" class="hidden">
 
     <div class="card">
-      <h2>🎯 抽奖配置</h2>
+      <h2>⚙ 抽奖配置</h2>
 
       <label>剩余抽奖次数</label>
-      <input id="chances" type="number">
+      <input id="chances" type="number" min="0" />
 
       <div id="prizeConfig"></div>
 
@@ -95,80 +87,81 @@ th, td {
       <h2>📊 抽奖记录</h2>
       <table>
         <thead>
-          <tr>
-            <th>时间</th>
-            <th>奖项</th>
-          </tr>
+          <tr><th>时间</th><th>奖项</th></tr>
         </thead>
         <tbody id="history"></tbody>
       </table>
     </div>
 
   </div>
+
 </div>
 
 <script>
-/* ====== 配置 ====== */
-const ADMIN_PASSWORD = "admin123";
+/* ====== 可自行修改的后台密码 ====== */
+const ADMIN_PASSWORD = "123456";
 
 /* ====== 登录 ====== */
-function login() {
+function login(){
   const pwd = document.getElementById("password").value;
-  if (pwd !== ADMIN_PASSWORD) {
+  if(pwd !== ADMIN_PASSWORD){
     alert("密码错误");
     return;
   }
-  localStorage.setItem("admin_login", "1");
-  init();
+  document.getElementById("login").style.display="none";
+  document.getElementById("panel").classList.remove("hidden");
+  loadStatus();
 }
 
-/* ====== 初始化 ====== */
-async function init() {
-  document.getElementById("loginBox").classList.add("hidden");
-  document.getElementById("adminBox").classList.remove("hidden");
-
+/* ====== 加载状态 ====== */
+async function loadStatus(){
   const res = await fetch("/api/status");
   const data = await res.json();
 
   document.getElementById("chances").value = data.chances;
 
-  const prizeBox = document.getElementById("prizeConfig");
-  prizeBox.innerHTML = "";
-
-  data.prizes.forEach((p, i) => {
-    prizeBox.innerHTML += `
-      <label>奖项 ${i+1} 概率权重</label>
-      <input type="number" data-index="${i}" value="${p.weight}">
+  // 奖项概率
+  const box = document.getElementById("prizeConfig");
+  box.innerHTML = "";
+  data.prizes.forEach((p,i)=>{
+    box.innerHTML += `
+      <label>${p.name} 概率权重</label>
+      <input type="number" min="0" data-index="${i}" value="${p.weight}">
     `;
   });
 
+  // 记录
   document.getElementById("history").innerHTML =
-    data.history.map(h =>
-      `<tr><td>${h.time}</td><td>${h.prize}</td></tr>`
-    ).join("");
+    data.history.map(h=>`
+      <tr>
+        <td>${h.time}</td>
+        <td>${h.prize}</td>
+      </tr>
+    `).join("");
 }
 
 /* ====== 保存配置 ====== */
-async function saveConfig() {
+async function saveConfig(){
   const chances = Number(document.getElementById("chances").value);
-  const prizeInputs = document.querySelectorAll("#prizeConfig input");
+  const inputs = document.querySelectorAll("#prizeConfig input");
 
-  const prizes = Array.from(prizeInputs).map(i => ({
-    weight: Number(i.value)
+  const prizes = [...inputs].map(i=>({
+    weight:Number(i.value)
   }));
 
-  await fetch("/api/config", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chances, prizes })
+  const res = await fetch("/api/config",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ chances, prizes })
   });
 
-  alert("配置已保存");
-}
-
-/* ====== 自动登录 ====== */
-if (localStorage.getItem("admin_login") === "1") {
-  init();
+  const data = await res.json();
+  if(data.ok){
+    alert("保存成功");
+    loadStatus();
+  }else{
+    alert("保存失败");
+  }
 }
 </script>
 
