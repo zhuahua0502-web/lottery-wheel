@@ -4,130 +4,112 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>抽奖后台</title>
-
 <style>
-body {
-  margin: 0;
-  background: #f7f8fa;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", Arial;
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",Arial;
+  background:#f7f7f7;
+  padding:20px;
 }
-.container {
-  max-width: 420px;
-  margin: 40px auto;
-  background: #fff;
-  padding: 20px;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+.box{
+  max-width:420px;
+  margin:auto;
+  background:#fff;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
 }
-h2 {
-  text-align: center;
+h2{text-align:center}
+.row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:10px 0;
 }
-input {
-  width: 100%;
-  padding: 10px;
-  margin: 6px 0;
-  font-size: 16px;
+input{
+  width:80px;
+  padding:6px;
 }
-button {
-  width: 100%;
-  height: 44px;
-  margin-top: 12px;
-  background: #1677ff;
-  color: #fff;
-  border: none;
-  border-radius: 22px;
-  font-size: 16px;
+button{
+  width:100%;
+  margin-top:16px;
+  height:44px;
+  border:none;
+  border-radius:22px;
+  background:#ff4d4f;
+  color:#fff;
+  font-size:16px;
 }
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.row input {
-  width: 120px;
-}
-.hide {
-  display: none;
-}
+.hidden{display:none}
 </style>
 </head>
 
 <body>
 
-<div class="container" id="loginBox">
+<div class="box" id="loginBox">
   <h2>🔐 后台登录</h2>
-  <input id="pwd" type="password" placeholder="后台密码">
+  <input id="pwd" type="password" placeholder="后台密码" style="width:100%;padding:10px">
   <button onclick="login()">进入后台</button>
 </div>
 
-<div class="container hide" id="adminBox">
+<div class="box hidden" id="adminBox">
   <h2>🎛 抽奖配置</h2>
 
-  <label>🎫 抽奖次数</label>
-  <input id="chances" type="number" min="0">
+  <div class="row">
+    <span>剩余抽奖次数</span>
+    <input id="chances" type="number">
+  </div>
 
-  <h3>🎁 奖项概率（权重）</h3>
-
-  <div id="prizes"></div>
+  <h3>🎁 奖项概率</h3>
+  <div id="prizeList"></div>
 
   <button onclick="save()">💾 保存配置</button>
 </div>
 
 <script>
-const ADMIN_PASSWORD = "123456"; // ← 改成你自己的
+const PASSWORD = "123456"; // ← 改成你自己的后台密码
 
 let config = null;
 
-function login() {
-  if (document.getElementById("pwd").value !== ADMIN_PASSWORD) {
+function login(){
+  if(document.getElementById("pwd").value !== PASSWORD){
     alert("密码错误");
     return;
   }
-  document.getElementById("loginBox").classList.add("hide");
-  document.getElementById("adminBox").classList.remove("hide");
-  load();
+  document.getElementById("loginBox").classList.add("hidden");
+  document.getElementById("adminBox").classList.remove("hidden");
+  loadConfig();
 }
 
-async function load() {
-  const res = await fetch("/api/status");
+async function loadConfig(){
+  const res = await fetch("/api/config");
   config = await res.json();
 
   document.getElementById("chances").value = config.chances;
 
-  const box = document.getElementById("prizes");
-  box.innerHTML = "";
+  const list = document.getElementById("prizeList");
+  list.innerHTML = "";
 
-  config.prizes.forEach((p, i) => {
+  config.prizes.forEach((p,i)=>{
     const div = document.createElement("div");
     div.className = "row";
     div.innerHTML = `
       <span>${p.name}</span>
-      <input type="number" min="0" value="${p.weight}" data-i="${i}">
+      <input type="number" value="${p.weight}" onchange="config.prizes[${i}].weight=this.value">
     `;
-    box.appendChild(div);
+    list.appendChild(div);
   });
 }
 
-async function save() {
-  const weights = [...document.querySelectorAll("#prizes input")]
-    .map(i => Number(i.value));
+async function save(){
+  config.chances = Number(document.getElementById("chances").value);
 
-  const body = {
-    chances: Number(document.getElementById("chances").value),
-    prizes: weights
-  };
-
-  const res = await fetch("/api/config", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+  await fetch("/api/config",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(config)
   });
 
-  if (res.ok) {
-    alert("保存成功");
-  } else {
-    alert("保存失败");
-  }
+  alert("保存成功");
 }
 </script>
 
