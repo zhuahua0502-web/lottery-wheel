@@ -2,165 +2,152 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>抽奖后台</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>抽奖后台管理</title>
 
 <style>
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",Arial;
-  background:#f6f7fb;
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", Arial;
+  background: linear-gradient(180deg, #ffecd2, #fcb69f);
 }
-.container{
-  max-width:420px;
-  margin:auto;
-  padding:16px;
+
+.login, .panel {
+  max-width: 420px;
+  margin: 60px auto;
+  background: #fff;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.15);
 }
-h2{text-align:center;}
-.card{
-  background:#fff;
-  border-radius:12px;
-  padding:16px;
-  margin-bottom:16px;
-  box-shadow:0 6px 18px rgba(0,0,0,.06);
+
+h2 {
+  text-align: center;
+  margin-bottom: 16px;
 }
-label{display:block;margin-top:12px;font-weight:bold;}
-input{
-  width:100%;
-  height:36px;
-  margin-top:6px;
-  padding:0 10px;
-  font-size:16px;
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
 }
-button{
-  width:100%;
-  height:44px;
-  margin-top:16px;
-  font-size:16px;
-  font-weight:bold;
-  border:none;
-  border-radius:22px;
-  background:linear-gradient(135deg,#ff512f,#dd2476);
-  color:#fff;
+
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  border-radius: 24px;
+  border: none;
+  color: #fff;
+  background: linear-gradient(135deg,#ff512f,#dd2476);
+  cursor: pointer;
 }
-button:active{transform:scale(.96);}
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
 }
-th,td{
-  border-bottom:1px solid #eee;
-  padding:8px 4px;
-  text-align:left;
+
+.item span {
+  flex: 1;
 }
-.hidden{display:none;}
+
+.item input {
+  width: 100px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<!-- 登录 -->
+<div class="login" id="loginBox">
+  <h2>🔐 后台管理登录</h2>
+  <input type="password" id="pwd" placeholder="请输入后台密码">
+  <button onclick="login()">登录</button>
+</div>
 
-  <!-- 登录 -->
-  <div id="login" class="card">
-    <h2>🔐 后台登录</h2>
-    <input id="password" type="password" placeholder="请输入后台密码" />
-    <button onclick="login()">进入后台</button>
-  </div>
+<!-- 管理面板 -->
+<div class="panel" id="panel" style="display:none;">
+  <h2>🎛 抽奖配置</h2>
 
-  <!-- 后台 -->
-  <div id="panel" class="hidden">
+  <label>🎫 每人抽奖次数</label>
+  <input type="number" id="chances" min="0">
 
-    <div class="card">
-      <h2>⚙ 抽奖配置</h2>
+  <h3>🎁 奖项概率（权重）</h3>
+  <div id="prizes"></div>
 
-      <label>剩余抽奖次数</label>
-      <input id="chances" type="number" min="0" />
-
-      <div id="prizeConfig"></div>
-
-      <button onclick="saveConfig()">💾 保存配置</button>
-    </div>
-
-    <div class="card">
-      <h2>📊 抽奖记录</h2>
-      <table>
-        <thead>
-          <tr><th>时间</th><th>奖项</th></tr>
-        </thead>
-        <tbody id="history"></tbody>
-      </table>
-    </div>
-
-  </div>
-
+  <button onclick="save()">💾 保存配置</button>
 </div>
 
 <script>
-/* ====== 可自行修改的后台密码 ====== */
-const ADMIN_PASSWORD = "123456";
+/* ========= 可自行修改的后台密码 ========= */
+const ADMIN_PASSWORD = "littlepei2025";
 
-/* ====== 登录 ====== */
+/* ========= 登录 ========= */
 function login(){
-  const pwd = document.getElementById("password").value;
-  if(pwd !== ADMIN_PASSWORD){
+  const v = document.getElementById("pwd").value;
+  if(v !== ADMIN_PASSWORD){
     alert("密码错误");
     return;
   }
-  document.getElementById("login").style.display="none";
-  document.getElementById("panel").classList.remove("hidden");
-  loadStatus();
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("panel").style.display = "block";
+  load();
 }
 
-/* ====== 加载状态 ====== */
-async function loadStatus(){
+/* ========= 加载配置 ========= */
+async function load(){
   const res = await fetch("/api/status");
   const data = await res.json();
 
   document.getElementById("chances").value = data.chances;
 
-  // 奖项概率
-  const box = document.getElementById("prizeConfig");
-  box.innerHTML = "";
-  data.prizes.forEach((p,i)=>{
-    box.innerHTML += `
-      <label>${p.name} 概率权重</label>
-      <input type="number" min="0" data-index="${i}" value="${p.weight}">
-    `;
-  });
+  const prizesBox = document.getElementById("prizes");
+  prizesBox.innerHTML = "";
 
-  // 记录
-  document.getElementById("history").innerHTML =
-    data.history.map(h=>`
-      <tr>
-        <td>${h.time}</td>
-        <td>${h.prize}</td>
-      </tr>
-    `).join("");
+  data.prizes.forEach((p, i)=>{
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <span>${p.name}</span>
+      <input type="number" min="0" value="${p.weight}" id="w${i}">
+    `;
+    prizesBox.appendChild(div);
+  });
 }
 
-/* ====== 保存配置 ====== */
-async function saveConfig(){
-  const chances = Number(document.getElementById("chances").value);
-  const inputs = document.querySelectorAll("#prizeConfig input");
+/* ========= 保存配置 ========= */
+async function save(){
+  const chance = Number(document.getElementById("chances").value);
 
-  const prizes = [...inputs].map(i=>({
-    weight:Number(i.value)
+  const res0 = await fetch("/api/status");
+  const cur = await res0.json();
+
+  const prizes = cur.prizes.map((p,i)=>({
+    name: p.name,
+    weight: Number(document.getElementById("w"+i).value)
   }));
 
   const res = await fetch("/api/config",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ chances, prizes })
+    body: JSON.stringify({
+      chances: chance,
+      prizes
+    })
   });
 
-  const data = await res.json();
-  if(data.ok){
-    alert("保存成功");
-    loadStatus();
+  const r = await res.json();
+  if(r.ok){
+    alert("✅ 保存成功");
   }else{
-    alert("保存失败");
+    alert("❌ 保存失败");
   }
 }
 </script>
